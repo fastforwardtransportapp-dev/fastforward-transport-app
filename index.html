@@ -21,7 +21,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter','Segoe UI',Arial,sans-serif}
 body{background:#EFF6FF;color:#0F172A}
-.nav{background:var(--bs);color:#fff;display:flex;align-items:center;padding:0 20px;height:52px;gap:6px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.nav{background:var(--bs);color:#fff;display:flex;align-items:center;padding:0 20px;height:52px;gap:6px;position:sticky;top:0;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .nav-logo{font-size:16px;font-weight:700;color:var(--bp);margin-right:12px;letter-spacing:1px;white-space:nowrap}
 .nav-btn{background:none;border:none;color:#ccc;padding:7px 12px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;white-space:nowrap}
 .nav-btn:hover{background:rgba(255,255,255,.1);color:#fff}
@@ -177,9 +177,59 @@ th{font-size:11px;letter-spacing:.6px;}
 .o365-btn{background:#0078d4;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:5px}
 .o365-badge{display:flex;align-items:center;gap:6px;font-size:.78rem}.o365-dot{width:7px;height:7px;border-radius:50%;background:#10b981;flex-shrink:0}
 
+
+/* === FF UI POLISH v2 === */
+*{box-sizing:border-box}
+body{font-family:'Inter','Segoe UI',Arial,sans-serif!important;-webkit-font-smoothing:antialiased}
+.nav-btn{font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:13px;font-weight:500;letter-spacing:.2px}
+.nav-btn.active{font-weight:700}
+/* Improve table readability */
+.data-table th{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#64748b;background:#f8fafc;padding:10px 12px}
+.data-table td{padding:11px 12px;font-size:13px;color:#334155;vertical-align:middle}
+.data-table tr:hover td{background:#f1f5f9}
+/* Status badges */
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.status-completed,.status-delivered{background:#dcfce7;color:#166534}
+.status-pending{background:#fef9c3;color:#854d0e}
+.status-in-progress,.status-in_progress{background:#dbeafe;color:#1e40af}
+.status-cancelled,.status-canceled{background:#fee2e2;color:#991b1b}
+/* Form controls */
+.form-control{font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:13px;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 12px;transition:border-color .15s}
+.form-control:focus{border-color:#2563eb;outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+/* Buttons */
+.btn{font-family:'Inter','Segoe UI',Arial,sans-serif;font-weight:600;border-radius:8px;font-size:13px;padding:8px 16px;transition:all .15s;cursor:pointer;border:none}
+.btn-primary{background:#2563eb;color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-secondary{background:#f1f5f9;color:#334155;border:1.5px solid #e2e8f0}.btn-secondary:hover{background:#e2e8f0}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-success{background:#22c55e;color:#fff}.btn-success:hover{background:#16a34a}
+/* Page headers */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-header h1,.page-header h2{font-size:22px;font-weight:800;color:#0f172a;margin:0;letter-spacing:-.3px}
+/* Cards */
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:16px;padding:28px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:18px;font-weight:800;color:#0f172a}
+/* Entity links - clickable names in tables */
+.entity-link{color:#2563eb;cursor:pointer;font-weight:600;text-decoration:none;border-bottom:1px dotted #2563eb}
+.entity-link:hover{color:#1d4ed8;border-bottom-style:solid}
+/* Alerts */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
+.alert-success{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+.alert-error{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+/* === END UI POLISH === */
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <!-- FF-V2-BUILD -->
+<!-- FF-DEPLOYED: ui-cleanup -->
+<!-- FF-DEPLOYED: entity-drawers -->
 </head>
 <body>
 <div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px"><div class="spinner" style="width:36px;height:36px;border-width:3px"></div><div style="font-size:16px;font-weight:600;color:#0F172A">Loading Fast-Forward...</div></div></div>
@@ -1842,6 +1892,12 @@ const O365SignIn = ({onToken}) => {
 };
 const AppShell = () => {
   const [fp, setFp] = React.useState(null);
+  const [entityDrawer, setEntityDrawer] = React.useState(null);
+  React.useEffect(()=>{
+    const handler = (e) => { setEntityDrawer(e.detail); };
+    window.addEventListener('ff:openEntityDrawer', handler);
+    return ()=>window.removeEventListener('ff:openEntityDrawer', handler);
+  },[]);
   const btnStyle = (id) => ({
     padding:'5px 10px', fontSize:12, fontWeight:700,
     background: fp===id ? '#2563eb' : 'rgba(255,255,255,0.95)',
@@ -1867,11 +1923,59 @@ const AppShell = () => {
     fp && React.createElement('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9998,background:'#f8fafc',overflowY:'auto',padding:'60px 24px 24px'}},
       React.createElement('button',{onClick:()=>setFp(null),style:{position:'fixed',top:10,right:8,zIndex:10001,padding:'5px 12px',background:'#ef4444',color:'#fff',border:'none',borderRadius:6,cursor:'pointer',fontWeight:700,fontSize:13}},'✕ Close'),
       pages[fp]
-    )
+    ),
+    entityDrawer && React.createElement(EntityDrawer,{entity:entityDrawer,onClose:()=>setEntityDrawer(null),supabase})
   );
 };
 // === END FF-V2 ===
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(AppShell));
+</script>
+
+<script>
+// FF Entity Drawer wiring - fires after React renders
+(function() {
+  var portalEl = document.createElement('div');
+  portalEl.id = 'ff-entity-portal';
+  document.body.appendChild(portalEl);
+
+  // Patch table cells to add click handlers for entity names
+  function patchTables() {
+    var cells = document.querySelectorAll('td');
+    cells.forEach(function(td) {
+      if(td.dataset.ffPatched) return;
+      var text = td.textContent.trim();
+      // Skip short/numeric cells and already-linked cells
+      if(!text || text.length < 2 || /^[£0-9]/.test(text) || td.querySelector('button,a,.status-badge')) return;
+      // Check if this looks like a name column (siblings have dates/statuses)
+      var row = td.parentElement;
+      if(!row) return;
+      var cells2 = row.querySelectorAll('td');
+      var idx = Array.from(cells2).indexOf(td);
+      // Heuristic: first or second column in a table with 4+ cols often = entity name
+      if(cells2.length >= 4 && idx <= 1) {
+        td.dataset.ffPatched = '1';
+        td.style.cursor = 'pointer';
+        td.style.color = '#2563eb';
+        td.style.fontWeight = '600';
+        td.title = 'Click to view history';
+        td.addEventListener('click', function(e) {
+          e.stopPropagation();
+          window.dispatchEvent(new CustomEvent('ff:openEntityDrawer', {
+            detail: { name: text, type: 'entity', id: text }
+          }));
+        });
+      }
+    });
+  }
+
+  // Watch for React renders
+  var observer = new MutationObserver(function() {
+    clearTimeout(window._ffPatchTimer);
+    window._ffPatchTimer = setTimeout(patchTables, 300);
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  setTimeout(patchTables, 1500);
+})();
 </script>
 </body>
 </html>
