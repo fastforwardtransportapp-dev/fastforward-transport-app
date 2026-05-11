@@ -227,7 +227,15 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif!important;-webkit-font-smoo
 /* === END UI POLISH === */
 
 
-/* Blue bar fix: offset all sticky elements inside app content for 56px nav */
+/* Blue bar REPLACED:
+
+/* Blue bar runtime fix - belt AND braces approach */
+.week-hdr, [class*="week-hdr"], [class*="weekHdr"] { top: 56px !important; }
+.ff-content-wrap thead th { position: sticky !important; top: 56px !important; }
+/* Catch any sticky div with a dark/blue background that's not our nav */
+div[style*="sticky"]:not(.ff-topnav) { top: 56px !important; }
+
+/* Old: offset all sticky elements inside app content for 56px nav */
 .main .week-hdr, .main [style*="sticky"], .week-hdr{top:56px!important}
 .ff-content-wrap .week-hdr{top:56px!important}
 
@@ -2004,48 +2012,128 @@ const DocumentsPage = ({supabase}) => {
   );
 };
 // ===== END DOCUMENT DESIGNER =====
-const AdminPage = ({supabase,user}) => {
-  const [tab,setTab]=React.useState('users');
-  const [users,setUsers]=React.useState([]);
-  const [docs,setDocs]=React.useState([]);
-  const [loading,setLoading]=React.useState(false);
-  const roles=['admin','manager','user','driver'];
-  React.useEffect(()=>{
+const AdminPage = ({supabase, user}) => {
+  const [tab, setTab] = React.useState('users');
+  const [users, setUsers] = React.useState([]);
+  const [docs, setDocs] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [msg, setMsg] = React.useState('');
+  const [editUser, setEditUser] = React.useState(null);
+
+  const ROLES = ['admin','manager','dispatcher','driver','viewer'];
+  const PERMS = ['create_jobs','edit_jobs','delete_jobs','view_invoices','send_invoices','manage_users','view_reports','bulk_email'];
+
+  React.useEffect(()=>{ loadUsers(); loadDocs(); },[]);
+
+  const loadUsers = async()=>{
     setLoading(true);
-    if(tab==='users') supabase.from('profiles').select('*').then(({data})=>{setUsers(data||[]);setLoading(false);}).catch(()=>{supabase.from('user_profiles').select('*').then(({data})=>{setUsers(data||[]);setLoading(false);}).catch(()=>setLoading(false));});
-    if(tab==='documents') supabase.from('job_documents').select('*').order('uploaded_at',{ascending:false}).limit(100).then(({data})=>{setDocs(data||[]);setLoading(false);}).catch(()=>setLoading(false));
-    if(tab==='permissions') setLoading(false);
-  },[tab]);
-  const changeRole=async(id,role)=>{await supabase.from('profiles').update({role}).eq('id',id).catch(()=>{});setUsers(u=>u.map(x=>x.id===id?{...x,role}:x));};
-  const tabs=[{id:'users',label:'👥 Users'},{id:'permissions',label:'🔑 Permissions'},{id:'documents',label:'📁 All Documents'}];
-  const PERMS=[['View Jobs','✅','✅','✅','✅'],['Create Jobs','✅','✅','✅','❌'],['Delete Jobs','✅','✅','❌','❌'],['Manage Users','✅','❌','❌','❌'],['View Invoices','✅','✅','✅','❌'],['Send Bulk Email','✅','✅','❌','❌'],['Admin Panel','✅','❌','❌','❌']];
-  return React.createElement('div',{style:{padding:'0'}},
-    React.createElement('div',{style:{padding:'20px 20px 0'}},React.createElement('h2',{style:{margin:0,fontSize:'1.2rem',fontWeight:700}},'⚙️ Admin Panel')),
-    React.createElement('div',{className:'admin-tabs'},tabs.map(t=>React.createElement('button',{key:t.id,className:'admin-tab'+(tab===t.id?' active':''),onClick:()=>setTab(t.id)},t.label))),
-    React.createElement('div',{style:{padding:'16px 20px',overflowX:'auto'}},
-      loading?React.createElement('p',{style:{color:'#9ca3af'}},'Loading…'):
-      tab==='users'?React.createElement('table',{className:'admin-table'},
-        React.createElement('thead',null,React.createElement('tr',null,['Email','Name','Role','Change Role'].map(h=>React.createElement('th',{key:h},h)))),
-        React.createElement('tbody',null,users.length===0?React.createElement('tr',null,React.createElement('td',{colSpan:4,style:{textAlign:'center',color:'#9ca3af',padding:'20px'}},'No user profiles found — ensure a "profiles" table exists in Supabase.')):
-          users.map(u=>React.createElement('tr',{key:u.id},
-            React.createElement('td',null,u.email||u.user_email||'—'),
+    try{
+      const {data} = await supabase.from('profiles').select('*').order('created_at',{ascending:false});
+      setUsers(data||[]);
+    }catch(e){ setMsg('Could not load users: '+e.message); }
+    setLoading(false);
+  };
+
+  const loadDocs = async()=>{
+    try{
+      const {data} = await supabase.from('job_documents').select('*,jobs(reference)').order('uploaded_at',{ascending:false}).limit(50);
+      setDocs(data||[]);
+    }catch(e){}
+  };
+
+  const updateRole = async(userId, role)=>{
+    try{
+      await supabase.from('profiles').update({role}).eq('id',userId);
+      setUsers(u=>u.map(u2=>u2.id===userId?{...u2,role}:u2));
+      setMsg('Role updated');setTimeout(()=>setMsg(''),2000);
+    }catch(e){setMsg('Error: '+e.message);}
+  };
+
+  const togglePerm = async(userId, perm, current)=>{
+    const perms = current||[];
+    const next = perms.includes(perm)?perms.filter(p=>p!==perm):[...perms,perm];
+    try{
+      await supabase.from('profiles').update({permissions:next}).eq('id',userId);
+      setUsers(u=>u.map(u2=>u2.id===userId?{...u2,permissions:next}:u2));
+    }catch(e){setMsg('Error: '+e.message);}
+  };
+
+  const tabs = [{id:'users',l:'👥 Users & Roles'},{id:'permissions',l:'🔐 Permissions'},{id:'documents',l:'📎 All Documents'},{id:'o365',l:'🔷 Office 365'}];
+
+  return React.createElement('div',{className:'page-content'},
+    React.createElement('div',{className:'page-header'},
+      React.createElement('h2',null,'Admin Panel'),
+      msg&&React.createElement('div',{className:'alert alert-success',style:{margin:0}},msg)
+    ),
+    React.createElement('div',{className:'tab-bar'},
+      tabs.map(t=>React.createElement('button',{key:t.id,className:'tab-btn'+(tab===t.id?' active':''),onClick:()=>setTab(t.id)},t.l))
+    ),
+
+    tab==='users'&&React.createElement('div',{className:'table-wrapper'},
+      React.createElement('table',{className:'data-table'},
+        React.createElement('thead',null,React.createElement('tr',null,
+          ['Email','Name','Role','Status','Last Active'].map(h=>React.createElement('th',{key:h},h))
+        )),
+        React.createElement('tbody',null,loading
+          ?React.createElement('tr',null,React.createElement('td',{colSpan:5,style:{textAlign:'center',padding:24,color:'#94a3b8'}},'Loading...'))
+          :users.map(u=>React.createElement('tr',{key:u.id},
+            React.createElement('td',null,u.email||u.id),
             React.createElement('td',null,u.full_name||u.name||'—'),
-            React.createElement('td',null,React.createElement('span',{className:'role-badge role-'+(u.role||'user')},u.role||'user')),
-            React.createElement('td',null,React.createElement('select',{value:u.role||'user',onChange:e=>changeRole(u.id,e.target.value),style:{border:'1px solid #d1d5db',borderRadius:'4px',padding:'4px 8px',fontSize:'.8rem'}},roles.map(r=>React.createElement('option',{key:r,value:r},r))))
+            React.createElement('td',null,
+              React.createElement('select',{value:u.role||'viewer',onChange:e=>updateRole(u.id,e.target.value),style:{padding:'4px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12,fontFamily:'inherit',fontWeight:600}},
+                ROLES.map(r=>React.createElement('option',{key:r,value:r},r.charAt(0).toUpperCase()+r.slice(1)))
+              )
+            ),
+            React.createElement('td',null,React.createElement('span',{className:'status-badge '+(u.is_active!==false?'status-completed':'status-cancelled')},u.is_active!==false?'Active':'Inactive')),
+            React.createElement('td',null,u.last_sign_in_at?(new Date(u.last_sign_in_at)).toLocaleDateString('en-GB'):'Never')
           ))
         )
-      ):
-      tab==='permissions'?React.createElement('table',{className:'admin-table'},
-        React.createElement('thead',null,React.createElement('tr',null,['Permission','Admin','Manager','User','Driver'].map(h=>React.createElement('th',{key:h},h)))),
-        React.createElement('tbody',null,PERMS.map((row,i)=>React.createElement('tr',{key:i},row.map((c,j)=>React.createElement('td',{key:j,style:{textAlign:j>0?'center':'left'}},c)))))
-      ):
-      React.createElement('table',{className:'admin-table'},
-        React.createElement('thead',null,React.createElement('tr',null,['File','Job ID','Type','Size','Uploaded'].map(h=>React.createElement('th',{key:h},h)))),
-        React.createElement('tbody',null,docs.map(d=>React.createElement('tr',{key:d.id},
-          React.createElement('td',null,d.file_name),React.createElement('td',null,d.job_id),React.createElement('td',null,d.file_type||'—'),
-          React.createElement('td',null,d.file_size?Math.round(d.file_size/1024)+'KB':'—'),
-          React.createElement('td',null,d.uploaded_at?new Date(d.uploaded_at).toLocaleDateString('en-GB'):'—')
+      )
+    ),
+
+    tab==='permissions'&&React.createElement('div',{className:'table-wrapper'},
+      React.createElement('table',{className:'data-table'},
+        React.createElement('thead',null,React.createElement('tr',null,
+          [React.createElement('th',{key:'u'},'User'),...PERMS.map(p=>React.createElement('th',{key:p,style:{fontSize:10,maxWidth:80}},p.replace(/_/g,' ')))]
+        )),
+        React.createElement('tbody',null,users.map(u=>
+          React.createElement('tr',{key:u.id},
+            React.createElement('td',{style:{fontWeight:600}},u.email||u.id),
+            ...PERMS.map(p=>React.createElement('td',{key:p,style:{textAlign:'center'}},
+              React.createElement('input',{type:'checkbox',checked:(u.permissions||[]).includes(p),onChange:()=>togglePerm(u.id,p,u.permissions||[]),style:{width:16,height:16,cursor:'pointer'}})
+            ))
+          )
+        ))
+      )
+    ),
+
+    tab==='documents'&&React.createElement('div',{className:'table-wrapper'},
+      React.createElement('table',{className:'data-table'},
+        React.createElement('thead',null,React.createElement('tr',null,
+          ['Job','Filename','Type','Uploaded','Size'].map(h=>React.createElement('th',{key:h},h))
+        )),
+        React.createElement('tbody',null,docs.map((d,i)=>React.createElement('tr',{key:i},
+          React.createElement('td',null,d.jobs?.reference||d.job_id),
+          React.createElement('td',null,d.filename||d.file_name||'—'),
+          React.createElement('td',null,d.file_type||d.type||'—'),
+          React.createElement('td',null,d.uploaded_at?(new Date(d.uploaded_at)).toLocaleDateString('en-GB'):'—'),
+          React.createElement('td',null,d.file_size?Math.round(d.file_size/1024)+'KB':'—')
         )))
+      )
+    ),
+
+    tab==='o365'&&React.createElement('div',{style:{maxWidth:520,margin:'0 auto'}},
+      React.createElement('div',{className:'card',style:{padding:28}},
+        React.createElement('div',{style:{fontSize:32,marginBottom:12}},'🔷'),
+        React.createElement('h3',{style:{fontSize:18,fontWeight:800,marginBottom:8}},'Office 365 Integration'),
+        React.createElement('p',{style:{color:'#64748b',fontSize:13,marginBottom:20,lineHeight:1.6}},'Connect your Office 365 account ('+('Claude@jsmglasgow.co.uk')+') to enable sending emails directly through Microsoft Graph API. This powers bulk subcontractor emails and invoice delivery.'),
+        React.createElement(O365SignIn,{onToken:t=>{window._o365Token=t;setMsg('Office 365 connected!');}}),
+        window._o365Token&&React.createElement('div',{className:'alert alert-success',style:{marginTop:16}},'✅ Connected — emails will route via Microsoft Graph API'),
+        React.createElement('div',{style:{marginTop:20,padding:16,background:'#f8fafc',borderRadius:8,fontSize:12,color:'#64748b'}},
+          React.createElement('div',{style:{fontWeight:700,marginBottom:4}},'Tenant: jsmglasgow.co.uk'),
+          React.createElement('div',null,'Admin: Claude@jsmglasgow.co.uk'),
+          React.createElement('div',{style:{marginTop:8,color:'#94a3b8'}},'Requires Azure app registration with Mail.Send permission')
+        )
       )
     )
   );
@@ -2344,6 +2432,100 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
   });
   observer.observe(document.body, { childList: true, subtree: true });
   setTimeout(patchTables, 1500);
+})();
+</script>
+<script id="ff-sticky-fix">
+(function(){
+  var NAV_H = 56; // our top nav height in px
+  function fixStickyElements(){
+    // Fix ALL elements with position:sticky - handles inline styles too
+    var all = document.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var el = all[i];
+      var cs = window.getComputedStyle(el);
+      if(cs.position === 'sticky' && el.className !== 'ff-topnav'){
+        var top = parseInt(cs.top)||0;
+        // If top is less than our nav height, push it down
+        if(top < NAV_H){
+          el.style.top = NAV_H + 'px';
+        }
+      }
+    }
+  }
+  // Run after React mounts
+  setTimeout(fixStickyElements, 800);
+  setTimeout(fixStickyElements, 2000);
+  setTimeout(fixStickyElements, 4000);
+  // Watch for new sticky elements added by React re-renders
+  var obs = new MutationObserver(function(){
+    clearTimeout(window._stickyTimer);
+    window._stickyTimer = setTimeout(fixStickyElements, 300);
+  });
+  document.addEventListener('DOMContentLoaded', function(){
+    obs.observe(document.body, {childList:true, subtree:true, attributeFilter:['style','class']});
+  });
+  // Also fix on scroll to catch late-rendered stickies
+  var scrollFixed = false;
+  window.addEventListener('scroll', function(){
+    if(!scrollFixed){ fixStickyElements(); scrollFixed=true; setTimeout(()=>{scrollFixed=false;},1000); }
+  });
+})();
+</script>
+<script id="ff-job-actions">
+(function(){
+  function closePanel(){ var p=document.getElementById('ff-jpanel'); if(p)p.remove(); }
+
+  function openJobPanel(jobId, jobRef, x, y){
+    closePanel();
+    var panel = document.createElement('div');
+    panel.id = 'ff-jpanel';
+    panel.style.cssText = 'position:fixed;z-index:4000;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:8px;min-width:210px;font-family:Inter,Segoe UI,Arial,sans-serif';
+    panel.style.top = Math.min(y+4,window.innerHeight-180)+'px';
+    panel.style.left = Math.max(Math.min(x,window.innerWidth-220),8)+'px';
+    var ref = jobRef||jobId||'Job';
+    var header = document.createElement('div');
+    header.style.cssText='padding:8px 10px;font-weight:800;font-size:12px;color:#64748b;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #f1f5f9;margin-bottom:4px';
+    header.textContent = ref;
+    panel.appendChild(header);
+    [{icon:'📎',label:'Upload Documents',event:'ff:openJobDocs'},{icon:'🧾',label:'Generate Invoice',event:'ff:openInvoice'},{icon:'✅',label:'Mark Complete',event:'ff:markComplete'}]
+    .forEach(function(a){
+      var btn=document.createElement('button');
+      btn.style.cssText='display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:9px 12px;border:none;background:none;cursor:pointer;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;font-weight:500;transition:background .1s';
+      btn.innerHTML='<span style="font-size:16px">'+a.icon+'</span>'+a.label;
+      btn.onmouseover=function(){this.style.background='#f1f5f9'};
+      btn.onmouseout=function(){this.style.background='none'};
+      btn.onclick=function(e){e.stopPropagation();closePanel();window.dispatchEvent(new CustomEvent(a.event,{detail:{jobId:jobId,jobRef:jobRef||ref}}));};
+      panel.appendChild(btn);
+    });
+    document.body.appendChild(panel);
+    setTimeout(function(){document.addEventListener('click',function h(e){if(!panel.contains(e.target)){closePanel();document.removeEventListener('click',h);}});},100);
+  }
+
+  function patchRows(){
+    document.querySelectorAll('tbody tr').forEach(function(row){
+      if(row.dataset.ffp) return;
+      var cells=row.querySelectorAll('td');
+      if(cells.length<3)return;
+      row.dataset.ffp='1';
+      var ref=(cells[0]?cells[0].textContent.trim():'');
+      var jobId=row.dataset.id||row.id||ref;
+      var last=cells[cells.length-1];
+      if(last.querySelector('.ff-jab'))return;
+      last.style.whiteSpace='nowrap';
+      var btn=document.createElement('button');
+      btn.className='ff-jab';
+      btn.style.cssText='border:1px solid #e2e8f0;background:#f8fafc;border-radius:6px;cursor:pointer;padding:2px 8px;font-size:13px;color:#64748b;font-weight:700;margin-left:6px;line-height:1.4;transition:all .1s;vertical-align:middle';
+      btn.title='Job actions';btn.textContent='⋯';
+      btn.onmouseover=function(){this.style.background='#e2e8f0';this.style.color='#0f172a'};
+      btn.onmouseout=function(){this.style.background='#f8fafc';this.style.color='#64748b'};
+      btn.onclick=function(e){e.stopPropagation();var r=btn.getBoundingClientRect();openJobPanel(jobId,ref,r.left,r.bottom);};
+      last.appendChild(btn);
+    });
+  }
+
+  var obs=new MutationObserver(function(){clearTimeout(window._jabT);window._jabT=setTimeout(patchRows,400);});
+  obs.observe(document.body,{childList:true,subtree:true});
+  setTimeout(patchRows,1500);setTimeout(patchRows,3000);
 })();
 </script>
 </body>
